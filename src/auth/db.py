@@ -1,5 +1,6 @@
 from collections.abc import Generator
 
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -17,3 +18,13 @@ async def get_db_session() -> Generator:
         yield session
     finally:
         await session.close()
+
+
+async def get_redis_connection():
+    try:
+        r = Redis(
+            host=settings.REDIS_HOST, port=6379, db=0, decode_responses=True
+        )
+        yield r
+    finally:
+        await r.close()

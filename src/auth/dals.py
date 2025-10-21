@@ -1,4 +1,3 @@
-# dals.py
 from sqlalchemy import select
 
 from src.auth.models import User, Role, Permission, role_permissions
@@ -32,6 +31,11 @@ class UserDAL:
                     setattr(user, key, value)
             await self.session.flush()
             return user
+
+    async def get_user_by_email(self, email: str):
+        stmt = select(User).where(User.email == email)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 class RoleDAL:
@@ -187,3 +191,23 @@ class PermissionDAL:
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+
+class RedisDAL:
+    def __init__(self, session):
+        self.session = session
+
+    async def set_key(self, key: str, value: str, expire_seconds: int = None):
+        if expire_seconds:
+            await self.session.setex(key, expire_seconds, value)
+        else:
+            await self.session.set(key, value)
+
+    async def get_key(self, key: str):
+        return await self.session.get(key)
+
+    async def delete_key(self, key: str):
+        await self.session.delete(key)
+
+    async def key_exists(self, key: str) -> bool:
+        return await self.session.exists(key) == 1
